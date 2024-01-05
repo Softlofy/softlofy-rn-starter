@@ -1,11 +1,9 @@
 #! /usr/bin/env node
 
 const fs = require("fs");
-const os = require("os");
 const shell = require("shelljs");
 
 const { program } = require("commander");
-const cliSelect = require("cli-select");
 
 program.parse();
 
@@ -23,33 +21,32 @@ const main = async (repositoryUrl, directoryName) => {
         `);
   }
 
-  const randomNameGenerator = (num) => {
-    let res = "";
-    for (let i = 0; i < num; i++) {
-      const random = Math.floor(Math.random() * 27);
-      res += String.fromCharCode(97 + random);
-    }
-    return res;
-  };
-
   //Get the name of the app-directory to make
-  let tmpDir = "temp" + randomNameGenerator(5);
+  let tmpDir = "tempDirectoryBySystemToBeRemoved";
+
   try {
+    removingDirectory(tmpDir);
+    // 1. Clone starter template
+    console.log("\x1b[34m", "Cloning Templates...");
     shell.exec(`git clone ${repositoryUrl} ${tmpDir}`);
 
-    //2. get the json from package.json
-    const packageJsonRaw = fs.readFileSync(`${tmpDir}/package.json`);
+    // 2. initialize React Native
+    console.log("\x1b[0m", "Initializing React Native...");
+    shell.exec(`npx react-native init ${directoryName}`);
 
-    const packageJson = JSON.parse(packageJsonRaw);
-    const dependencyList = Object.keys(packageJson.dependencies);
-    const devDependencyList = Object.keys(packageJson.devDependencies);
+    const dependencyList = [
+      "softlofy-rn-components",
+      "react-native-reanimated",
+      "react-native-svg",
+    ];
 
-    console.log("Now, installing react-native...");
-
-    shell.exec(`echo N | npx react-native init ${directoryName}`);
+    const devDependencyList = ["react-native-svg-transformer"];
 
     //3. Installing the dependencies.
-    console.log("installing... ", dependencyList);
+    console.log(
+      "installing... ",
+      `${dependencyList.join(" ")} & ${devDependencyList.join(" ")}`
+    );
     shell.exec(`yarn add ${dependencyList.join(" ")}`, {
       cwd: `${process.cwd()}/${directoryName}`,
     });
@@ -57,103 +54,57 @@ const main = async (repositoryUrl, directoryName) => {
       cwd: `${process.cwd()}/${directoryName}`,
     });
 
-    const projectDirectories = directoryName.split("/");
-
-    shell.ls(`${tmpDir}/android/app/src/main/res/drawable/`).forEach((file) => {
-      shell.cp(
-        "-rf",
-        `${tmpDir}/android/app/src/main/res/drawable/${file}`,
-        `${directoryName}/android/app/src/main/res/drawable/`
-      );
-    });
-    shell
-      .ls(`${tmpDir}/ios/boilerPlateTypescript/Images.xcassets/`)
-      .forEach((file) => {
-        shell.cp(
-          "-rf",
-          `${tmpDir}/ios/boilerPlateTypescript/Images.xcassets/${file}`,
-          `${directoryName}/ios/${
-            projectDirectories[projectDirectories.length - 1]
-          }/Images.xcassets/`
-        );
-      });
-    shell.mv(`${tmpDir}/src`, `${directoryName}`);
-
-    if (os.type() === "Darwin") {
-      shell.exec(`npx pod-install`, {
-        cwd: `${process.cwd()}/${directoryName}`,
-      });
-    } else {
-      console.log("iOS setup only supported in Mac OS.");
-    }
-
-    if (repositoryUrl === tsURL) {
-      shell.rm("-rf", `${directoryName}/index.js`);
-      shell.mv(`${tmpDir}/index.js`, `${directoryName}`);
-      shell.rm("-rf", `${directoryName}/App.tsx`);
-    } else {
-      shell.rm("-rf", `${directoryName}/App.js`);
-    }
+    shell.rm("-rf", `${directoryName}/App.tsx`);
     shell.rm("-rf", `${directoryName}/babel.config.js`);
-    shell.rm("-rf", `${directoryName}/tsconfig.json`);
     shell.rm("-rf", `${directoryName}/metro.config.js`);
     shell.rm("-rf", `${directoryName}/.eslintrc.js`);
     shell.rm("-rf", `${directoryName}/.prettierrc.js`);
+    shell.rm("-rf", `${directoryName}/README.md`);
 
-    shell.mv(`${tmpDir}/tsconfig.json`, `${directoryName}`);
+    shell.mv(`${tmpDir}/src`, `${directoryName}`);
+    shell.mv(`${tmpDir}/App.tsx`, `${directoryName}`);
     shell.mv(`${tmpDir}/babel.config.js`, `${directoryName}`);
     shell.mv(`${tmpDir}/metro.config.js`, `${directoryName}`);
     shell.mv(`${tmpDir}/.eslintrc`, `${directoryName}`);
     shell.mv(`${tmpDir}/.prettierrc`, `${directoryName}`);
+    shell.mv(`${tmpDir}/README.md`, `${directoryName}`);
+    shell.cd(`${directoryName}/src`);
+    shell.mkdir("assets");
+    shell.mkdir("components");
+    shell.mkdir("screens");
+    shell.mkdir("utils");
+    shell.mkdir("hooks");
+    shell.cd("../..");
 
-    console.log("Adding additional scripts...");
-    addScripts(directoryName);
-
-    console.log(`Application generated... its ready to use.
-  To get started, 
+    console.log("\x1b[32m", `Application generated... its ready to use.`);
+    console.log(
+      "\x1b[0m",
+      `To get started, 
   - cd ${directoryName}
-  - npm run dev
-  `);
-
-    // console.log(
-    //   'Please, add "postinstall": "sh postinstall" in script to package.json '
-    // );
-
-    // - If not start try to delete watchman watches by running following command:
-    // - watchman watch-del-all
-    // - Then start metro server clearing its cache by running following command:
-    // - yarn start --clear-cache
-
-    // the rest of your app goes here
+  - npm run dev`
+    );
   } catch {
     // handle error
   } finally {
-    try {
-      if (tmpDir) {
-        fs.rmSync(tmpDir, { recursive: true });
-      }
-    } catch (e) {
-      console.error(
-        `An error has occurred while removing the temp folder at ${tmpDir}. Please remove it manually. Error: ${e}`
-      );
-    }
+    removingDirectory(tmpDir);
   }
 };
 
-const addScripts = (directory) => {
-  let packageJSON = JSON.parse(
-    fs.readFileSync(`${directory}/package.json`, "utf8")
-  );
-  let scripts = packageJSON.scripts;
-  scripts.postinstall = "sh postinstall";
-  fs.writeFileSync(
-    `${directory}/package.json`,
-    JSON.stringify(packageJSON, null, 2)
-  );
-  console.log("Added postinstall script");
+const removingDirectory = (directory) => {
+  try {
+    if (directory && fs.existsSync(directory)) {
+      fs.rmSync(directory, { recursive: true });
+    } else {
+      return;
+    }
+  } catch (e) {
+    console.error(
+      `An error has occurred while removing the temp folder at ${directory}. Please remove it manually. Error: ${e}`
+    );
+  }
 };
 
-const tsURL = "https://github.com/Softlofy/softlofy-rn-components.git";
+const templateURL = "https://github.com/Softlofy/rn-starter-termplate.git";
 
 let directoryName = process.argv[2];
 
@@ -168,20 +119,10 @@ if (!directoryName || directoryName.length === 0) {
     readline.close();
     directoryName = name;
 
-    console.log(`Do you want to install husky`);
-    cliSelect({
-      values: ["Yes", "No"],
-    }).then((husky) => {
-      console.log(husky);
-      if (husky.value === "Yes") {
-        main(tsURL, directoryName, true);
-      } else {
-        main(tsURL, directoryName, false);
-      }
-    });
+    main(templateURL, directoryName);
     if (programOptions.ts) {
       console.log("Generating... Typescript Template");
-      return main(tsURL, directoryName);
+      return main(templateURL, directoryName);
     }
   });
   return;
@@ -195,18 +136,7 @@ if (directoryName.match(/[<>:"\/\\|?*\x00-\x1F]/)) {
 
 if (programOptions.ts) {
   console.log("Generating... Typescript Template");
-  return main(tsURL, directoryName);
+  return main(templateURL, directoryName);
 }
 
-console.log(`Do you want to install husky`);
-
-cliSelect({
-  values: ["Yes", "No"],
-}).then((husky) => {
-  console.log(husky);
-  if (husky.value === "Yes") {
-    main(tsURL, directoryName, true);
-  } else {
-    main(tsURL, directoryName, false);
-  }
-});
+main(templateURL, directoryName);

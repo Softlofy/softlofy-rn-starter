@@ -1,13 +1,14 @@
 {
-  "name": "softlofy-rn-starter",
-  "version": "1.0.13",
-  "description": "A React Native Template.",
+  "name": "softlofy-rn-components-starter",
+  "version": "1.0.0",
+  "description": "Starter template for softlofy-rn-components",
   "main": "index.js",
   "bin": {
-    "softlofy-rn-starter": "index.js"
+    "softlofy-rn-components-starter": "index.js"
   },
   "scripts": {
-    "test": "echo \"No test specified\" && exit 1"
+    "test": "echo \"No test specified\" && exit 1",
+    "start": "node index.js"
   },
   "keywords": [
     "react-native",
@@ -17,14 +18,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/atliq/react-native-starter"
+    "url": "git+https://github.com/Softlofy/softlofy-rn-starter"
   },
   "author": {
-    "name": "Atliq Technologies"
+    "name": "Softlofy"
   },
   "license": "ISC",
   "dependencies": {
-    "cli-select": "^1.1.2",
     "commander": "^9.0.0",
     "shelljs": "^0.8.5"
   }
