@@ -1,14 +1,8 @@
 # Softlofy RN Components
 
-The starter template of [softlofy-rn-components](https://www.npmjs.com/package/softlofy-rn-components) Developed by [Softlofy](https://softlofy.com/).
-
-# Installation
-
-    npx softlofy-rn-components-starter <YourProjectName>
+This project has been started with [softlofy-rn-components](https://www.npmjs.com/package/softlofy-rn-components?activeTab=readme) which is developed by [Softlofy](https://softlofy.com/)
 
 # Components
-
-The lis of components.
 
 ## Button
 
