@@ -25,6 +25,7 @@
   },
   "license": "ISC",
   "dependencies": {
+    "cli-select": "^1.1.2",
     "commander": "^9.0.0",
     "shelljs": "^0.8.5"
   }

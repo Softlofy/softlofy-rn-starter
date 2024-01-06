@@ -2,14 +2,14 @@
 
 const fs = require("fs");
 const shell = require("shelljs");
-
+const cliSelect = require("cli-select");
 const { program } = require("commander");
 
 program.parse();
 
 const programOptions = program.opts();
 
-const main = async (repositoryUrl, directoryName) => {
+const main = async (repositoryUrl, directoryName, phoneInput) => {
   console.log(`Creating new project ${directoryName}`);
   console.log(`Installing Yarn`);
   shell.exec("npm install -g yarn", (code, stdout, stderr) => {
@@ -34,11 +34,18 @@ const main = async (repositoryUrl, directoryName) => {
     console.log("\x1b[0m", "Initializing React Native...");
     shell.exec(`npx react-native init ${directoryName}`);
 
-    const dependencyList = [
-      "softlofy-rn-components",
-      "react-native-reanimated",
-      "react-native-svg",
-    ];
+    const dependencyList = phoneInput
+      ? [
+          "softlofy-rn-components",
+          "react-native-reanimated",
+          "react-native-svg",
+          "softlofy-rn-phone-input-component",
+        ]
+      : [
+          "softlofy-rn-components",
+          "react-native-reanimated",
+          "react-native-svg",
+        ];
 
     const devDependencyList = ["react-native-svg-transformer"];
 
@@ -108,6 +115,22 @@ const templateURL = "https://github.com/Softlofy/rn-starter-termplate.git";
 
 let directoryName = process.argv[2];
 
+const callMainFunction = () => {
+  console.log(
+    `Do you need a phone number input for for your project ${directoryName}?`
+  );
+  cliSelect({
+    values: ["Yes", "No"],
+  }).then((phoneInput) => {
+    console.log(phoneInput);
+    if (phoneInput.value === "Yes") {
+      main(templateURL, directoryName, true);
+    } else {
+      main(templateURL, directoryName, false);
+    }
+  });
+};
+
 if (!directoryName || directoryName.length === 0) {
   const readline = require("readline").createInterface({
     input: process.stdin,
@@ -119,10 +142,10 @@ if (!directoryName || directoryName.length === 0) {
     readline.close();
     directoryName = name;
 
-    main(templateURL, directoryName);
+    callMainFunction();
     if (programOptions.ts) {
       console.log("Generating... Typescript Template");
-      return main(templateURL, directoryName);
+      return callMainFunction();
     }
   });
   return;
@@ -136,7 +159,7 @@ if (directoryName.match(/[<>:"\/\\|?*\x00-\x1F]/)) {
 
 if (programOptions.ts) {
   console.log("Generating... Typescript Template");
-  return main(templateURL, directoryName);
+  return callMainFunction();
 }
 
-main(templateURL, directoryName);
+callMainFunction();
